@@ -1,0 +1,418 @@
+{
+  "name": "Telegram AI Support Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "58326b9b-ca07-4f00-bb35-4aa95f6c0a34",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        128
+      ],
+      "webhookId": "telegram-bot-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract incoming Telegram message data\nconst body = $input.item.json.body;\n\n// Handle if body is already parsed or needs parsing\nconst data = typeof body === 'string' ? JSON.parse(body) : body;\n\n// Extract message details\nconst messageData = {\n  chatId: data.message?.chat?.id,\n  userId: data.message?.from?.id,\n  username: data.message?.from?.username || data.message?.from?.first_name || 'Unknown',\n  firstName: data.message?.from?.first_name || '',\n  messageText: data.message?.text || '',\n  messageId: data.message?.message_id,\n  timestamp: new Date().toISOString()\n};\n\n// Return extracted data\nreturn {\n  json: messageData\n};"
+      },
+      "id": "cb5ab955-c30f-46d6-b8cc-e3823f6ef33f",
+      "name": "Extract Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simple in-memory conversation history\n// For production, use Redis or a database\n\nconst userId = $json.userId;\nconst storageKey = `history_${userId}`;\n\n// Get history from workflow static data\nlet history = [];\n\nif ($getWorkflowStaticData('global')[storageKey]) {\n  history = JSON.parse($getWorkflowStaticData('global')[storageKey]);\n}\n\nreturn {\n  json: {\n    ...$json,\n    conversationHistory: history\n  }\n};"
+      },
+      "id": "c1b7f6c3-ce67-4056-b49a-8ae464ee7212",
+      "name": "Get Conversation History",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// FAQ Knowledge Base\nconst FAQs = [\n  {\n    keywords: ['hours', 'open', 'timing', 'schedule', 'when'],\n    answer: '🕐 We are open Monday-Friday: 9 AM - 6 PM, Saturday: 10 AM - 4 PM. Closed on Sundays.'\n  },\n  {\n    keywords: ['price', 'cost', 'pricing', 'fee', 'how much'],\n    answer: '💰 Our pricing starts at $49/month for the basic plan, $99/month for pro, and custom pricing for enterprise. Visit our website for detailed pricing.'\n  },\n  {\n    keywords: ['contact', 'email', 'phone', 'reach', 'call'],\n    answer: '📞 You can reach us at support@example.com or call +1-234-567-8900 during business hours.'\n  },\n  {\n    keywords: ['return', 'refund', 'money back', 'guarantee'],\n    answer: '💵 We offer a 30-day money-back guarantee. Contact our support team to initiate a refund.'\n  },\n  {\n    keywords: ['shipping', 'delivery', 'ship', 'deliver'],\n    answer: '📦 We ship worldwide. Domestic orders: 3-5 business days. International: 7-14 business days.'\n  },\n  {\n  keywords: ['hello', 'hi there', 'hey there', '/start'],\n  answer: '👋 Hello!...'\n}\n];\n\nconst userMessage = $json.messageText.toLowerCase();\nlet faqMatch = null;\n\n// Check if user message matches any FAQ\nfor (const faq of FAQs) {\n  if (faq.keywords.some(keyword => userMessage.includes(keyword))) {\n    faqMatch = faq.answer;\n    break;\n  }\n}\n\nreturn {\n  json: {\n    ...$json,\n    faqMatch: faqMatch,\n    needsAI: !faqMatch\n  }\n};"
+      },
+      "id": "b7cba3b0-2a98-4fb1-b313-86d9ea0a3059",
+      "name": "FAQ Knowledge Base",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.faqMatch}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "e869fd77-83f8-42ca-b2e2-d7c577003f42",
+      "name": "Has FAQ Answer?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c67bfb62-46e7-4cdf-ba79-d0a9e0cfbcfb",
+      "name": "FAQ Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format messages for OpenAI\nconst messages = [\n  {\n    role: 'system',\n    content: `You are a helpful customer support assistant. Answer user questions professionally and concisely.\n\nIf you cannot answer a question with certainty or it requires account-specific information, say: \"I'll need to escalate this to a human agent for accurate assistance.\"\n\nKeep responses under 200 words.`\n  }\n];\n\n// Add conversation history (last 10 messages)\nif ($json.conversationHistory && $json.conversationHistory.length > 0) {\n  messages.push(...$json.conversationHistory.slice(-10));\n}\n\n// Add current user message\nmessages.push({\n  role: 'user',\n  content: $json.messageText\n});\n\nreturn {\n  json: {\n    ...$json,\n    messages: messages\n  }\n};"
+      },
+      "id": "c311941b-1984-4b72-a2e1-59fe5b533371",
+      "name": "Format OpenAI Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json.botResponse || '';\n\n// Check if AI wants to escalate\nconst escalationKeywords = [\n  'escalate',\n  'human agent',\n  'transfer',\n  'speak to someone',\n  'talk to human'\n];\n\nconst needsEscalation = escalationKeywords.some(keyword => \n  response.toLowerCase().includes(keyword)\n);\n\nreturn {\n  json: {\n    ...$json,\n    botResponse: response,\n    escalated: needsEscalation\n  }\n};"
+      },
+      "id": "241e2c1f-38e4-4507-9d8e-dcb3fd6a3046",
+      "name": "Check Escalation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        240
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "206322f5-51b8-4702-98d5-99d6944c7ede",
+      "name": "Merge Responses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        880,
+        128
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const botResponse = $json.botResponse || $json.faqMatch;\nconst userId = $json.userId;\nconst userMessage = $json.messageText;\n\n// Get existing history\nlet history = $json.conversationHistory || [];\n\n// Add new messages\nhistory.push({\n  role: 'user',\n  content: userMessage\n});\n\nhistory.push({\n  role: 'assistant',\n  content: botResponse\n});\n\n// Keep only last 20 messages (10 exchanges)\nif (history.length > 20) {\n  history = history.slice(-20);\n}\n\n// Store in workflow static data\nconst storageKey = `history_${userId}`;\n$getWorkflowStaticData('global')[storageKey] = JSON.stringify(history);\n\nreturn {\n  json: {\n    ...$json,\n    botResponse: botResponse,\n    conversationHistory: history\n  }\n};"
+      },
+      "id": "d4d9ee73-4553-423e-999d-50b9cfa87013",
+      "name": "Update Conversation History",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot8121356067:AAEbpRiY8SvwOV23anw6dU9cQLVHevrwCP4/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=chat_id",
+              "value": "={{$json.chatId}}"
+            },
+            {
+              "name": "text",
+              "value": "={{$json.botResponse}}{{$json.escalated ? '\\n\\n⚠️ This conversation has been escalated to a human agent. Someone will contact you shortly.' : ''}}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "HTML"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0471587c-dcdc-44a9-882e-56a65ceaed3e",
+      "name": "Send Telegram Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1536,
+        128
+      ],
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\": \"ok\", \"timestamp\": \"{{$json.timestamp}}\"}",
+        "options": {}
+      },
+      "id": "82a91bef-ad5d-49f6-9971-be38b6800f1c",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "llama-3.3-70b-versatile"
+            },
+            {
+              "name": "messages",
+              "value": "={{$json.messages}}"
+            },
+            {
+              "name": "temperature",
+              "value": "={{0.7}}"
+            },
+            {
+              "name": "max_tokens",
+              "value": "={{500}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        240
+      ],
+      "id": "061d1a77-0603-4076-905a-56b925bb8625",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "e8yokTA6Gwr4QIiC",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const previousData = $('Format OpenAI Messages').item.json;\nconst groqResponse = $json.choices[0].message.content;\n\nreturn {\n  json: {\n    ...previousData,\n    botResponse: groqResponse\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        240
+      ],
+      "id": "fa7fe1d0-1644-4eab-8510-fb17bad5536f",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Message": {
+      "main": [
+        [
+          {
+            "node": "Get Conversation History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Conversation History": {
+      "main": [
+        [
+          {
+            "node": "FAQ Knowledge Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ Knowledge Base": {
+      "main": [
+        [
+          {
+            "node": "Has FAQ Answer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has FAQ Answer?": {
+      "main": [
+        [
+          {
+            "node": "FAQ Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format OpenAI Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ Response": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format OpenAI Messages": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Escalation": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Responses": {
+      "main": [
+        [
+          {
+            "node": "Update Conversation History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Conversation History": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Telegram Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Check Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "5321dba0-b186-4c38-9c0c-851c59655582",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6989ed914a57342677e2779343bf134b55d5801ee502606198c8317111b69ea3"
+  },
+  "id": "afZaIfq4DVBRq5fT",
+  "tags": []
+}
