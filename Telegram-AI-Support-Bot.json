@@ -154,7 +154,7 @@
             },
             {
               "name": "text",
-              "value": "={{$json.botResponse}}{{$json.escalated ? '\\n\\n⚠️ This conversation has been escalated to a human agent. Someone will contact you shortly.' : ''}}"
+              "value": "={{$json[\"Bot Response\"]}}{{$json.Escalated ? '\\n\\n⚠️ This conversation has been escalated to a human agent. Someone will contact you shortly.' : ''}}"
             },
             {
               "name": "parse_mode",
@@ -172,7 +172,9 @@
         1536,
         128
       ],
-      "retryOnFail": false
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 600
     },
     {
       "parameters": {
@@ -245,6 +247,226 @@
       ],
       "id": "fa7fe1d0-1644-4eab-8510-fb17bad5536f",
       "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1YCPahMRh6DlguOGnxRp-MgmDigHF4pjoE5CITa-0Ujo",
+          "mode": "list",
+          "cachedResultName": "Telegram Bot Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YCPahMRh6DlguOGnxRp-MgmDigHF4pjoE5CITa-0Ujo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YCPahMRh6DlguOGnxRp-MgmDigHF4pjoE5CITa-0Ujo/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{$json.timestamp}}",
+            "User ID": "={{$json.userId}}",
+            "User Message": "={{$json.messageText}}",
+            "Username": "={{$json.username}}",
+            "Bot Response": "={{$json.botResponse}}",
+            "Escalated": "={{$json.Escalated}}",
+            "chatId": "={{$json.chatId}}"
+          },
+          "matchingColumns": [
+            "Timestamp"
+          ],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "User ID",
+              "displayName": "User ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Username",
+              "displayName": "Username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "User Message",
+              "displayName": "User Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Bot Response",
+              "displayName": "Bot Response",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Escalated",
+              "displayName": "Escalated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "chatId",
+              "displayName": "chatId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "userId",
+              "displayName": "userId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "username",
+              "displayName": "username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "firstName",
+              "displayName": "firstName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "messageText",
+              "displayName": "messageText",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "messageId",
+              "displayName": "messageId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "conversationHistory",
+              "displayName": "conversationHistory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "faqMatch",
+              "displayName": "faqMatch",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "needsAI",
+              "displayName": "needsAI",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "botResponse",
+              "displayName": "botResponse",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1296,
+        128
+      ],
+      "id": "6e666f12-c43e-44fd-971e-b9180f6d65fd",
+      "name": "Append or update row in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "1RUK3LHJmI4xa6hb",
+          "name": "Google Sheets account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -359,7 +581,7 @@
       "main": [
         [
           {
-            "node": "Send Telegram Response",
+            "node": "Append or update row in sheet",
             "type": "main",
             "index": 0
           }
@@ -398,6 +620,17 @@
           }
         ]
       ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -408,7 +641,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "5321dba0-b186-4c38-9c0c-851c59655582",
+  "versionId": "1414c418-a8c2-4b6b-84c0-537f0a7a71c1",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6989ed914a57342677e2779343bf134b55d5801ee502606198c8317111b69ea3"
