@@ -8,7 +8,7 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "58326b9b-ca07-4f00-bb35-4aa95f6c0a34",
+      "id": "783e869e-bda2-48c6-aec6-79b0d2608436",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
@@ -22,7 +22,7 @@
       "parameters": {
         "jsCode": "// Extract incoming Telegram message data\nconst body = $input.item.json.body;\n\n// Handle if body is already parsed or needs parsing\nconst data = typeof body === 'string' ? JSON.parse(body) : body;\n\n// Extract message details\nconst messageData = {\n  chatId: data.message?.chat?.id,\n  userId: data.message?.from?.id,\n  username: data.message?.from?.username || data.message?.from?.first_name || 'Unknown',\n  firstName: data.message?.from?.first_name || '',\n  messageText: data.message?.text || '',\n  messageId: data.message?.message_id,\n  timestamp: new Date().toISOString()\n};\n\n// Return extracted data\nreturn {\n  json: messageData\n};"
       },
-      "id": "cb5ab955-c30f-46d6-b8cc-e3823f6ef33f",
+      "id": "42cdbe93-6f7c-4aff-9dc1-1284dea25f47",
       "name": "Extract Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -35,7 +35,7 @@
       "parameters": {
         "jsCode": "// Simple in-memory conversation history\n// For production, use Redis or a database\n\nconst userId = $json.userId;\nconst storageKey = `history_${userId}`;\n\n// Get history from workflow static data\nlet history = [];\n\nif ($getWorkflowStaticData('global')[storageKey]) {\n  history = JSON.parse($getWorkflowStaticData('global')[storageKey]);\n}\n\nreturn {\n  json: {\n    ...$json,\n    conversationHistory: history\n  }\n};"
       },
-      "id": "c1b7f6c3-ce67-4056-b49a-8ae464ee7212",
+      "id": "f9b44a19-c6bb-424b-a396-57d4b638b3bb",
       "name": "Get Conversation History",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -48,7 +48,7 @@
       "parameters": {
         "jsCode": "// FAQ Knowledge Base\nconst FAQs = [\n  {\n    keywords: ['hours', 'open', 'timing', 'schedule', 'when'],\n    answer: '🕐 We are open Monday-Friday: 9 AM - 6 PM, Saturday: 10 AM - 4 PM. Closed on Sundays.'\n  },\n  {\n    keywords: ['price', 'cost', 'pricing', 'fee', 'how much'],\n    answer: '💰 Our pricing starts at $49/month for the basic plan, $99/month for pro, and custom pricing for enterprise. Visit our website for detailed pricing.'\n  },\n  {\n    keywords: ['contact', 'email', 'phone', 'reach', 'call'],\n    answer: '📞 You can reach us at support@example.com or call +1-234-567-8900 during business hours.'\n  },\n  {\n    keywords: ['return', 'refund', 'money back', 'guarantee'],\n    answer: '💵 We offer a 30-day money-back guarantee. Contact our support team to initiate a refund.'\n  },\n  {\n    keywords: ['shipping', 'delivery', 'ship', 'deliver'],\n    answer: '📦 We ship worldwide. Domestic orders: 3-5 business days. International: 7-14 business days.'\n  },\n  {\n  keywords: ['hello', 'hi there', 'hey there', '/start'],\n  answer: '👋 Hello!...'\n}\n];\n\nconst userMessage = $json.messageText.toLowerCase();\nlet faqMatch = null;\n\n// Check if user message matches any FAQ\nfor (const faq of FAQs) {\n  if (faq.keywords.some(keyword => userMessage.includes(keyword))) {\n    faqMatch = faq.answer;\n    break;\n  }\n}\n\nreturn {\n  json: {\n    ...$json,\n    faqMatch: faqMatch,\n    needsAI: !faqMatch\n  }\n};"
       },
-      "id": "b7cba3b0-2a98-4fb1-b313-86d9ea0a3059",
+      "id": "c4a00d1b-2114-4264-835c-d4487f7d0400",
       "name": "FAQ Knowledge Base",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -68,7 +68,7 @@
           ]
         }
       },
-      "id": "e869fd77-83f8-42ca-b2e2-d7c577003f42",
+      "id": "5fc6943d-c776-4a83-8f21-4113760e53bb",
       "name": "Has FAQ Answer?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
@@ -81,7 +81,7 @@
       "parameters": {
         "options": {}
       },
-      "id": "c67bfb62-46e7-4cdf-ba79-d0a9e0cfbcfb",
+      "id": "82b29a5b-0aa0-4d9c-ab4b-22808541904d",
       "name": "FAQ Response",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3,
@@ -92,9 +92,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Format messages for OpenAI\nconst messages = [\n  {\n    role: 'system',\n    content: `You are a helpful customer support assistant. Answer user questions professionally and concisely.\n\nIf you cannot answer a question with certainty or it requires account-specific information, say: \"I'll need to escalate this to a human agent for accurate assistance.\"\n\nKeep responses under 200 words.`\n  }\n];\n\n// Add conversation history (last 10 messages)\nif ($json.conversationHistory && $json.conversationHistory.length > 0) {\n  messages.push(...$json.conversationHistory.slice(-10));\n}\n\n// Add current user message\nmessages.push({\n  role: 'user',\n  content: $json.messageText\n});\n\nreturn {\n  json: {\n    ...$json,\n    messages: messages\n  }\n};"
+        "jsCode": "// Format messages for OpenAI\nconst messages = [\n  {\n    role: 'system',\n  content: `You are a helpful customer support assistant.\n\nIMPORTANT: You have access to the conversation history. Use it confidently to answer questions about what the user has told you in this conversation.\n\nGuidelines:\n- Answer questions professionally and concisely\n- If the user mentioned something earlier (their name, preferences, etc.), use that information - don't say you don't have it\n- Only escalate if you genuinely cannot answer OR if it requires account-specific data NOT in the conversation (billing, technical account issues, etc.)\n- Keep responses under 200 words\n\nWhen to escalate:\n- Questions about account billing/charges\n- Technical issues requiring account access\n- Requests to modify account settings\n- Complex issues beyond general support\n\nWhen NOT to escalate:\n- Questions about things the user told you in this conversation\n- General product questions\n- Questions you can answer from conversation context\n\nIf you need to escalate, say: \"I'll need to escalate this to a human agent for accurate assistance.\"`\n  }\n];\n\n// Add conversation history (last 10 messages)\nif ($json.conversationHistory && $json.conversationHistory.length > 0) {\n  messages.push(...$json.conversationHistory.slice(-10));\n}\n\n// Add current user message\nmessages.push({\n  role: 'user',\n  content: $json.messageText\n});\n\nreturn {\n  json: {\n    ...$json,\n    messages: messages\n  }\n};"
       },
-      "id": "c311941b-1984-4b72-a2e1-59fe5b533371",
+      "id": "751eb50f-47a3-48a4-8c73-2a0341f04af7",
       "name": "Format OpenAI Messages",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -107,7 +107,7 @@
       "parameters": {
         "jsCode": "const response = $json.botResponse || '';\n\n// Check if AI wants to escalate\nconst escalationKeywords = [\n  'escalate',\n  'human agent',\n  'transfer',\n  'speak to someone',\n  'talk to human'\n];\n\nconst needsEscalation = escalationKeywords.some(keyword => \n  response.toLowerCase().includes(keyword)\n);\n\nreturn {\n  json: {\n    ...$json,\n    botResponse: response,\n    escalated: needsEscalation\n  }\n};"
       },
-      "id": "241e2c1f-38e4-4507-9d8e-dcb3fd6a3046",
+      "id": "a4ae10e7-c77d-49a6-99e3-461c562a0812",
       "name": "Check Escalation",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -118,7 +118,7 @@
     },
     {
       "parameters": {},
-      "id": "206322f5-51b8-4702-98d5-99d6944c7ede",
+      "id": "edb8b158-7552-45ab-965f-beb40e644732",
       "name": "Merge Responses",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2,
@@ -132,7 +132,7 @@
       "parameters": {
         "jsCode": "const botResponse = $json.botResponse || $json.faqMatch;\nconst userId = $json.userId;\nconst userMessage = $json.messageText;\n\n// Get existing history\nlet history = $json.conversationHistory || [];\n\n// Add new messages\nhistory.push({\n  role: 'user',\n  content: userMessage\n});\n\nhistory.push({\n  role: 'assistant',\n  content: botResponse\n});\n\n// Keep only last 20 messages (10 exchanges)\nif (history.length > 20) {\n  history = history.slice(-20);\n}\n\n// Store in workflow static data\nconst storageKey = `history_${userId}`;\n$getWorkflowStaticData('global')[storageKey] = JSON.stringify(history);\n\nreturn {\n  json: {\n    ...$json,\n    botResponse: botResponse,\n    conversationHistory: history\n  }\n};"
       },
-      "id": "d4d9ee73-4553-423e-999d-50b9cfa87013",
+      "id": "0445aa2e-d57f-42ff-b678-a8c24970e172",
       "name": "Update Conversation History",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -164,15 +164,15 @@
         },
         "options": {}
       },
-      "id": "0471587c-dcdc-44a9-882e-56a65ceaed3e",
+      "id": "673699df-f430-4448-ae2e-90c0c5388bc2",
       "name": "Send Telegram Response",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1536,
+        1680,
         128
       ],
-      "retryOnFail": true,
+      "retryOnFail": false,
       "maxTries": 3,
       "waitBetweenTries": 600
     },
@@ -182,12 +182,12 @@
         "responseBody": "={\"status\": \"ok\", \"timestamp\": \"{{$json.timestamp}}\"}",
         "options": {}
       },
-      "id": "82a91bef-ad5d-49f6-9971-be38b6800f1c",
+      "id": "3159b937-b0f7-4a33-a92a-9379abf22b07",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        1760,
+        1280,
         128
       ]
     },
@@ -226,12 +226,12 @@
         208,
         240
       ],
-      "id": "061d1a77-0603-4076-905a-56b925bb8625",
+      "id": "32ecc0fe-1e88-4f13-8350-362713e31875",
       "name": "HTTP Request",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "e8yokTA6Gwr4QIiC",
-          "name": "Header Auth account 2"
+          "id": "q3tfLVoJhbXE3Xi5",
+          "name": "Header Auth account"
         }
       }
     },
@@ -245,7 +245,7 @@
         416,
         240
       ],
-      "id": "fa7fe1d0-1644-4eab-8510-fb17bad5536f",
+      "id": "699047e1-3771-4f1e-91cb-616cdebf79cb",
       "name": "Code in JavaScript"
     },
     {
@@ -455,15 +455,15 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1296,
+        1472,
         128
       ],
-      "id": "6e666f12-c43e-44fd-971e-b9180f6d65fd",
+      "id": "356c0439-cb94-47e7-a178-a1811b564e8c",
       "name": "Append or update row in sheet",
       "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
-          "id": "1RUK3LHJmI4xa6hb",
+          "id": "OjrcHWkau2F2QzNc",
           "name": "Google Sheets account"
         }
       }
@@ -581,17 +581,6 @@
       "main": [
         [
           {
-            "node": "Append or update row in sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Telegram Response": {
-      "main": [
-        [
-          {
             "node": "Respond to Webhook",
             "type": "main",
             "index": 0
@@ -631,21 +620,30 @@
           }
         ]
       ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
-    "timeSavedMode": "fixed",
-    "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "1414c418-a8c2-4b6b-84c0-537f0a7a71c1",
+  "versionId": "6e5fa45c-98de-416d-aaf5-759064c62e19",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "6989ed914a57342677e2779343bf134b55d5801ee502606198c8317111b69ea3"
+    "instanceId": "97e3d44635a959bc966353e7dea91d9dc4c944d971e3434231a778b9d73d2490"
   },
-  "id": "afZaIfq4DVBRq5fT",
+  "id": "SHp44D0ABoPJ0Xwz",
   "tags": []
 }
