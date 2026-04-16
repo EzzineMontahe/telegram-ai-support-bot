@@ -17,6 +17,7 @@ A production-ready, intelligent customer support bot for Telegram that combines 
 - **Smart Escalation** - Automatically detects when human support is needed
 - **Multi-User Support** - Handles unlimited concurrent conversations
 - **Zero Downtime** - Webhook-based architecture for 24/7 availability
+- ☁️ **Cloud-Deployed**: Running 24/7 on DigitalOcean with no downtime
 
 ### 🚀 Performance
 - **Sub-second responses** for FAQ queries (~100-400ms total)
@@ -29,6 +30,17 @@ A production-ready, intelligent customer support bot for Telegram that combines 
 - **Automatic escalation detection** for billing, account-specific, or complex issues
 - **Customizable FAQ database** with keyword matching
 - **Graceful fallback** when AI can't provide confident answers
+
+## 🚀 Deployment
+
+This bot is deployed on DigitalOcean cloud server for 24/7 uptime and reliable performance.
+
+- **Server:** Ubuntu 24.04 LTS on DigitalOcean
+- **Process Manager:** PM2 for auto-restart
+- **HTTPS Tunnel:** Ngrok for Telegram webhook
+- **Cost:** $0/month (using GitHub Student Developer Pack credits)
+
+See [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md) for complete setup instructions.
 
 ---
 
